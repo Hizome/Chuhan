@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { AppShell, createTheme, MantineProvider } from "@mantine/core";
+import {
+  AppShell,
+  createTheme,
+  MantineProvider,
+  ActionIcon,
+  TextInput,
+  Autocomplete,
+  Textarea,
+  Input,
+} from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "react-mosaic-component/react-mosaic-component.css";
@@ -9,7 +18,7 @@ import SideBar from "./components/layout/SideBar";
 import BoardsPage from "./components/tabs/BoardsPage";
 
 const theme = createTheme({
-  primaryColor: "red",
+  primaryColor: "blue",
   colors: {
     dark: [
       "#C1C2C5",
@@ -23,6 +32,23 @@ const theme = createTheme({
       "#141517",
       "#101113",
     ],
+  },
+  components: {
+    ActionIcon: ActionIcon.extend({
+      defaultProps: {
+        variant: "transparent",
+        color: "gray",
+      },
+    }),
+    TextInput: TextInput.extend({ defaultProps: { spellCheck: false } }),
+    Autocomplete: Autocomplete.extend({ defaultProps: { spellCheck: false } }),
+    Textarea: Textarea.extend({ defaultProps: { spellCheck: false } }),
+    Input: Input.extend({
+      defaultProps: {
+        // @ts-expect-error mantine input type
+        spellCheck: false,
+      },
+    }),
   },
 });
 

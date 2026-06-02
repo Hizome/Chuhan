@@ -27,9 +27,9 @@ export default function TabHeader() {
 
   const addTab = useCallback(() => {
     const newTab = {
-      name: "新对局",
+      name: "新建",
       value: generateTabId(),
-      type: "analysis" as const,
+      type: "new" as const,
     };
     setTabs([...tabs, newTab]);
     setActiveTab(newTab.value);
@@ -40,13 +40,13 @@ export default function TabHeader() {
       e.stopPropagation();
       const newTabs = tabs.filter((t) => t.value !== value);
       if (newTabs.length === 0) {
-        const emptyTab = {
-          name: "新对局",
+        const homeTab = {
+          name: "首页",
           value: generateTabId(),
-          type: "analysis" as const,
+          type: "new" as const,
         };
-        newTabs.push(emptyTab);
-        setActiveTab(emptyTab.value);
+        newTabs.push(homeTab);
+        setActiveTab(homeTab.value);
       } else if (activeTab === value) {
         setActiveTab(newTabs[0].value);
       }
@@ -86,7 +86,7 @@ export default function TabHeader() {
                           borderBottom:
                             activeTab === tab.value
                               ? "2px solid transparent"
-                              : "2px solid var(--mantine-color-dark-4)",
+                              : "1px solid var(--mantine-color-dark-4)",
                           backgroundColor:
                             activeTab === tab.value
                               ? "var(--mantine-color-dark-7)"
@@ -103,6 +103,7 @@ export default function TabHeader() {
                           size="xs"
                           variant="transparent"
                           ml="xs"
+                          aria-label={`关闭 ${tab.name}`}
                           onClick={(e) => closeTab(e, tab.value)}
                         >
                           <IconX size={12} />
@@ -117,7 +118,7 @@ export default function TabHeader() {
           </Droppable>
         </DragDropContext>
       </ScrollArea>
-      <ActionIcon size="sm" variant="transparent" onClick={addTab}>
+      <ActionIcon size="sm" variant="transparent" aria-label="新建标签" onClick={addTab}>
         <IconPlus size={16} />
       </ActionIcon>
     </Group>

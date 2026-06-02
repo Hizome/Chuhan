@@ -1,24 +1,27 @@
 import { useCallback, useRef } from "react";
 
-export function useSound() {
-  const moveSound = useRef<HTMLAudioElement | null>(null);
-  const captureSound = useRef<HTMLAudioElement | null>(null);
+type SoundType = "select" | "move" | "capture" | "error";
 
-  const play = useCallback((type: "move" | "capture") => {
+const SOUND_SOURCES: Record<SoundType, string> = {
+  select: "/assets/sounds/select.mp3",
+  move: "/assets/sounds/go.mp3",
+  capture: "/assets/sounds/eat.mp3",
+  error: "/assets/sounds/goerror.mp3",
+};
+
+export function useSound() {
+  const sounds = useRef<Partial<Record<SoundType, HTMLAudioElement>>>({});
+
+  const play = useCallback((type: SoundType) => {
     try {
-      if (type === "capture") {
-        if (!captureSound.current) {
-          captureSound.current = new Audio("/libs/xiangqiboardjs-0.3.3/sounds/capture.wav");
-        }
-        captureSound.current.currentTime = 0;
-        captureSound.current.play();
-      } else {
-        if (!moveSound.current) {
-          moveSound.current = new Audio("/libs/xiangqiboardjs-0.3.3/sounds/move.wav");
-        }
-        moveSound.current.currentTime = 0;
-        moveSound.current.play();
+      if (!sounds.current[type]) {
+        sounds.current[type] = new Audio(SOUND_SOURCES[type]);
       }
+      const sound = sounds.current[type];
+      if (!sound) return;
+
+      sound.currentTime = 0;
+      void sound.play();
     } catch {
       // Audio play failed, ignore
     }

@@ -1,21 +1,17 @@
-import { Group, Title, Button } from "@mantine/core";
+import { Group, Title, ActionIcon } from "@mantine/core";
+import { IconMenu2 } from "@tabler/icons-react";
 
 export default function TopBar() {
   return (
-    <Group h="100%" px="md" justify="space-between" style={{ userSelect: "none" }}>
+    <Group h="100%" px="sm" justify="space-between" style={{ userSelect: "none" }}>
       <Group gap="xs">
-        <Title order={5}>楚汉</Title>
+        <ActionIcon size="sm" variant="transparent">
+          <IconMenu2 size={16} />
+        </ActionIcon>
+        <Title order={6} fw={600}>楚汉</Title>
       </Group>
       <Group gap="xs">
-        <Button size="compact-xs" variant="subtle">
-          文件
-        </Button>
-        <Button size="compact-xs" variant="subtle">
-          视图
-        </Button>
-        <Button size="compact-xs" variant="subtle">
-          帮助
-        </Button>
+        {/* Placeholder for future menu items */}
       </Group>
     </Group>
   );

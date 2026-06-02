@@ -18,6 +18,21 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Home page card hover effect */
+.home-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--mantine-shadow-md);
+}
+
+/* Recent file row hover */
+[data-mantine-color-scheme="dark"] .recent-file-row:hover {
+  background-color: var(--mantine-color-dark-5);
+}
+
+[data-mantine-color-scheme="light"] .recent-file-row:hover {
+  background-color: var(--mantine-color-gray-1);
+}
+
 /* Mosaic overrides */
 .mosaic.mosaic-blueprint-theme {
   background-color: transparent;
@@ -28,15 +43,139 @@ html, body {
   box-shadow: 0 0 0 1px var(--mantine-primary-color-filled) !important;
 }
 
-/* Board highlight overrides */
+.board-analysis-side-tile {
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--mantine-spacing-xs);
+}
+
+.board-analysis-side-tile > *,
+.board-analysis-bottom-panel,
+.board-analysis-bottom-panel > *,
+.board-analysis-move-list,
+.board-analysis-compact,
+.board-analysis-compact > * {
+  min-width: 0;
+}
+
+.board-analysis-bottom-panel {
+  overflow: hidden;
+}
+
+.board-analysis-move-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.board-analysis-move-list > * {
+  height: 100%;
+}
+
+.board-analysis-move-controls {
+  flex: 0 0 auto;
+}
+
+.board-analysis-compact {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  height: 100%;
+  overflow: auto;
+  padding: var(--mantine-spacing-xs);
+}
+
+.board-analysis-compact-board {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  min-height: min(58vh, 390px);
+}
+
+.board-analysis-compact-panels {
+  display: grid;
+  gap: var(--mantine-spacing-xs);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.board-analysis-compact-analysis {
+  min-height: 280px;
+}
+
+.board-analysis-compact-bottom {
+  min-height: 340px;
+}
+
+/* Xiangqiboard overrides - force hide spare pieces */
+.spare-pieces-9e77b,
+.spare-pieces-top-e4b47,
+.spare-pieces-bottom-29dac {
+  display: none !important;
+}
+
+/* Board styling - ensure board fits container */
+.board-1ef78 {
+  border: none !important;
+  box-sizing: border-box;
+}
+
+.xiangqiboard-8ddcb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Chessground-style move highlights */
 [data-mantine-color-scheme="dark"] .square-2b8ce.highlight {
-  background-color: color-mix(in srgb, var(--mantine-primary-color-5) 40%, transparent);
+  background-color: color-mix(in srgb, var(--mantine-primary-color-5) 35%, transparent) !important;
 }
 
-[data-mantine-color-scheme="dark"] .square-2b8ce.legalmove {
-  background: radial-gradient(rgba(255, 255, 255, 0.3) 25%, rgba(0, 0, 0, 0) 0);
+/* Legal move: small dot in center (chessground style) */
+[data-mantine-color-scheme="dark"] .square-2b8ce.legalmove::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background-color: color-mix(in srgb, var(--mantine-color-gray-3) 55%, transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
-[data-mantine-color-scheme="dark"] .square-2b8ce.legalcapture {
-  background: radial-gradient(rgba(255, 0, 0, 0.4) 25%, rgba(0, 0, 0, 0) 0);
+/* Legal capture: larger ring (chessground style) */
+[data-mantine-color-scheme="dark"] .square-2b8ce.legalcapture::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  border: 4px solid color-mix(in srgb, var(--mantine-color-gray-3) 50%, transparent);
+  background-color: transparent;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Piece hover effect */
+.piece-1e8b9 {
+  cursor: grab;
+  transition: opacity 0.1s ease;
+}
+.piece-1e8b9:active {
+  cursor: grabbing;
+}
+
+/* Dragging piece */
+.dragging-piece {
+  opacity: 0.85;
+  cursor: grabbing;
+  z-index: 1000;
 }

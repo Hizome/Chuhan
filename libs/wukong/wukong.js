@@ -322,7 +322,7 @@ var Engine = function() {
     
     // generate FEN string
     function generateFen() {
-      let pieces = [0, 'P', 'A', 'E', 'H', 'C', 'R', 'K', 'p', 'a', 'e', 'h', 'c', 'r', 'k'];
+      let pieces = [0, 'P', 'A', 'B', 'N', 'C', 'R', 'K', 'p', 'a', 'b', 'n', 'c', 'r', 'k'];
       let fen = '';
       
       for (let rank = 0; rank < 14; rank++) {
@@ -331,7 +331,7 @@ var Engine = function() {
         for (let file = 0; file < 11; file++) {
           let square = rank * 11 + file;
 
-          if (engine.getPiece(square) != OFFBOARD) {
+          if (board[square] != OFFBOARD) {
             let piece = board[square];
             
             if (piece == 0) empty++;
@@ -1766,5 +1766,4 @@ var Engine = function() {
 
 // export as nodejs module
 if (typeof(exports) != 'undefined') exports.Engine = Engine;
-
 

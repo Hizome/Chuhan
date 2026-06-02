@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { produce } from "immer";
 import type { TreeNode, TreeState, GameHeaders, Move } from "../types/xiangqi";
 import { START_FEN } from "../types/xiangqi";
@@ -75,8 +76,8 @@ export interface TreeStore extends TreeState {
   resetTree: () => void;
 }
 
-export const createTreeStore = (initialTree?: TreeState) => {
-  return create<TreeStore>((set, get) => ({
+export const createTreeStore = (id?: string, initialTree?: TreeState) => {
+  const storeCreator = (set: (fn: (state: TreeStore) => void) => void, get: () => TreeStore) => ({
     ...(initialTree ?? defaultTree()),
 
     currentNode: () => getNodeAtPath(get().root, get().position),
@@ -202,5 +203,16 @@ export const createTreeStore = (initialTree?: TreeState) => {
       }),
 
     resetTree: () => set(defaultTree()),
-  }));
+  });
+
+  if (id) {
+    return create<TreeStore>()(
+      persist(storeCreator, {
+        name: `tree-${id}`,
+        storage: createJSONStorage(() => sessionStorage),
+      })
+    );
+  }
+
+  return create<TreeStore>(storeCreator);
 };

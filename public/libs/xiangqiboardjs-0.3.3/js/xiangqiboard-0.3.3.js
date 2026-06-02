@@ -521,12 +521,12 @@
     // default piece theme is wikimedia
     if (!config.hasOwnProperty('pieceTheme') ||
         (!isString(config.pieceTheme) && !isFunction(config.pieceTheme))) {
-      config.pieceTheme = '../libs/xiangqiboardjs-0.3.3/img/xiangqipieces/wikimedia/{piece}.svg'
+      config.pieceTheme = '/assets/pieces/{piece}.png'
     }
 
     // default board theme is wikimedia
     if (!config.hasOwnProperty('boardTheme') || !isString(config.boardTheme)) {
-      config.boardTheme = '../libs/xiangqiboardjs-0.3.3/img/xiangqiboards/wikimedia/xiangqiboard.bmp'
+      config.boardTheme = '/assets/boards/board-red.png'
     }
 
     // animation speeds

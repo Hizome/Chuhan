@@ -32,19 +32,26 @@ interface WukongEngine {
 interface BoardProps {
   fen: string;
   onMove: (move: Move, newFen: string) => void;
+  boardId: string;
   orientation?: "red" | "black";
   draggable?: boolean;
-  pieceTheme?: string;
+  pieceTheme?: string | ((piece: string) => string);
+  boardTheme?: string;
   highlightSquares?: string[];
   lastMove?: { from: string; to: string } | null;
 }
 
+const DEFAULT_PIECE_THEME = "/assets/pieces/{piece}.png";
+const DEFAULT_BOARD_THEME = "/assets/boards/board-red.png";
+
 export default function Board({
   fen,
   onMove,
+  boardId,
   orientation = "red",
   draggable = true,
-  pieceTheme,
+  pieceTheme = DEFAULT_PIECE_THEME,
+  boardTheme = DEFAULT_BOARD_THEME,
   highlightSquares = [],
   lastMove,
 }: BoardProps) {
@@ -69,9 +76,12 @@ export default function Board({
       draggable,
       position: fen,
       orientation: orientation === "red" ? "red" : "black",
-      moveSpeed: 50,
-      snapbackSpeed: 50,
+      sparePieces: false,
+      showNotation: false,
+      moveSpeed: 100,
+      snapbackSpeed: 100,
       snapSpeed: 50,
+      appearSpeed: 100,
       onDragStart: (source: string) => {
         if (!engineRef.current) return false;
         highlightLegalMoves(source);
@@ -90,13 +100,20 @@ export default function Board({
       },
     };
 
-    if (pieceTheme) {
-      config.pieceTheme = pieceTheme;
-    }
+    config.pieceTheme = pieceTheme;
+    config.boardTheme = boardTheme;
 
-    boardApi.current = window.Xiangqiboard("xiangqiboard", config);
+    // Delay initialization to ensure container has correct size
+    let rafId = 0;
+    const initBoard = () => {
+      if (boardRef.current) {
+        boardApi.current = window.Xiangqiboard(boardId, config);
+      }
+    };
+    rafId = requestAnimationFrame(initBoard);
 
     return () => {
+      cancelAnimationFrame(rafId);
       boardApi.current?.destroy();
       boardApi.current = null;
     };
@@ -184,7 +201,7 @@ export default function Board({
 
   return (
     <div
-      id="xiangqiboard"
+      id={boardId}
       ref={boardRef}
       style={{ width: "100%", maxWidth: 480 }}
     />

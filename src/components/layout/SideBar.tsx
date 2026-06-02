@@ -22,14 +22,15 @@ export default function SideBar({ active, onChange }: SideBarProps) {
   ];
 
   return (
-    <Stack gap="xs" align="center" pt="xs">
+    <Stack gap={4} align="center" pt="xs">
       {items.map(({ page, icon: Icon, label }) => (
         <Tooltip key={page} label={label} position="right">
           <ActionIcon
             size="lg"
-            variant={active === page ? "filled" : "transparent"}
-            color={active === page ? "gray" : undefined}
+            variant={active === page ? "light" : "transparent"}
+            color={active === page ? "blue" : "gray"}
             onClick={() => onChange(page)}
+            style={{ borderRadius: "var(--mantine-radius-sm)" }}
           >
             <Icon size={20} />
           </ActionIcon>

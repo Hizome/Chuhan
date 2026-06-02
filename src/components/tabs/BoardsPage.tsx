@@ -1,50 +1,50 @@
-import { useCallback } from "react";
+import { useEffect } from "react";
 import { useAtom } from "jotai";
-import { Stack } from "@mantine/core";
+import { Tabs } from "@mantine/core";
 import TabHeader from "./TabHeader";
-import MosaicLayout from "../layout/MosaicLayout";
 import BoardAnalysis from "../boards/BoardAnalysis";
-import { tabsAtom, activeTabAtom, windowsStateAtom } from "../../state/uiStore";
-import type { MosaicNode } from "react-mosaic-component";
-import type { ViewId } from "../../state/uiStore";
+import NewTabHome from "./NewTabHome";
+import { tabsAtom, activeTabAtom, tabPayloadsAtom } from "../../state/uiStore";
 
 export default function BoardsPage() {
   const [tabs] = useAtom(tabsAtom);
-  const [activeTab] = useAtom(activeTabAtom);
-  const [windowsState, setWindowsState] = useAtom(windowsStateAtom);
+  const [activeTab, setActiveTab] = useAtom(activeTabAtom);
+  const [, setPayloads] = useAtom(tabPayloadsAtom);
 
-  const handleMosaicChange = useCallback(
-    (node: MosaicNode<ViewId> | null) => {
-      if (node) {
-        setWindowsState({ currentNode: node });
-      }
-    },
-    [setWindowsState]
-  );
+  // Ensure activeTab is valid; fallback to first tab
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some((t) => t.value === activeTab)) {
+      setActiveTab(tabs[0].value);
+    }
+  }, [tabs, activeTab, setActiveTab]);
 
   return (
-    <Stack gap={0} style={{ height: "100%" }}>
+    <Tabs
+      value={activeTab}
+      onChange={(v) => v && setActiveTab(v)}
+      keepMounted={false}
+      style={{ height: "100%", display: "flex", flexDirection: "column" }}
+    >
       <TabHeader />
-      <div style={{ flex: 1, overflow: "hidden" }}>
-        {tabs.map((tab) => (
-          <div
-            key={tab.value}
-            style={{
-              display: activeTab === tab.value ? "flex" : "none",
-              height: "100%",
-              flexDirection: "column",
-            }}
-          >
+
+      {tabs.map((tab) => (
+        <Tabs.Panel
+          key={tab.value}
+          value={tab.value}
+          style={{ flex: 1, overflow: "hidden" }}
+        >
+          {tab.type === "new" ? (
+            <NewTabHome
+              tabId={tab.value}
+              onStartAnalysis={(tree) => {
+                setPayloads((prev) => ({ ...prev, [tab.value]: tree }));
+              }}
+            />
+          ) : (
             <BoardAnalysis tabId={tab.value} />
-            <div style={{ flex: 1, overflow: "hidden" }}>
-              <MosaicLayout
-                value={windowsState.currentNode}
-                onChange={handleMosaicChange}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Stack>
+          )}
+        </Tabs.Panel>
+      ))}
+    </Tabs>
   );
 }

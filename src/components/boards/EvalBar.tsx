@@ -1,4 +1,4 @@
-import { Box, Text } from "@mantine/core";
+import { Box, Text, useMantineTheme } from "@mantine/core";
 
 interface EvalBarProps {
   score: number; // centipawn, positive = red advantage
@@ -11,12 +11,15 @@ function getWinChance(cp: number): number {
 }
 
 export default function EvalBar({ score, orientation = "red" }: EvalBarProps) {
+  const theme = useMantineTheme();
   const redWinChance = getWinChance(score);
   const blackWinChance = 100 - redWinChance;
 
   // If orientation is black, flip the bar
   const topChance = orientation === "red" ? blackWinChance : redWinChance;
   const bottomChance = orientation === "red" ? redWinChance : blackWinChance;
+
+  const redColor = theme.colors.red[7];
 
   return (
     <Box
@@ -52,7 +55,7 @@ export default function EvalBar({ score, orientation = "red" }: EvalBarProps) {
       <Box
         style={{
           height: `${bottomChance}%`,
-          backgroundColor: "#c83232",
+          backgroundColor: redColor,
           transition: "height 0.2s ease",
           display: "flex",
           alignItems: "center",
