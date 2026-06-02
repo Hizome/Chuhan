@@ -2,6 +2,8 @@
 
 跨平台中国象棋 GUI，对 [ccbridge-arena](https://github.com/maksimKorzh/ccbridge-arena) 的重构版本。
 
+UI 设计与交互模式参考 [En Croissant](https://github.com/franciscoBSalgueiro/en-croissant)。
+
 ## 技术栈
 
 | 层级 | 技术 |
@@ -11,6 +13,9 @@
 | **构建工具** | Vite 8 |
 | **UI 组件库** | Mantine v7 |
 | **状态管理** | Zustand (游戏树) + Jotai (全局 UI) |
+| **面板布局** | react-mosaic-component |
+| **标签拖拽** | @hello-pangea/dnd |
+| **图表** | Recharts |
 | **棋盘渲染** | xiangqiboardjs |
 | **内置引擎** | Wukong (JavaScript) |
 
@@ -55,14 +60,30 @@ npm run tauri build
 
 ```
 ├── src/                    # React 前端源码
-│   ├── components/         # UI 组件
-│   │   ├── Board.tsx       # 象棋棋盘
+│   ├── components/
+│   │   ├── boards/         # 棋盘相关组件
+│   │   │   ├── Board.tsx       # 象棋棋盘
+│   │   │   ├── EvalBar.tsx     # 评估条
+│   │   │   └── BoardAnalysis.tsx # 分析面板容器
+│   │   ├── panels/         # 侧边面板
+│   │   │   └── analysis/
+│   │   │       └── AnalysisPanel.tsx # 引擎分析面板
+│   │   ├── tabs/           # 标签页系统
+│   │   │   ├── TabHeader.tsx   # 可拖拽标签栏
+│   │   │   └── BoardsPage.tsx  # 棋盘页面
+│   │   ├── layout/         # 布局组件
+│   │   │   ├── SideBar.tsx     # 左侧导航栏
+│   │   │   ├── TopBar.tsx      # 顶部标题栏
+│   │   │   └── MosaicLayout.tsx # 可调整面板布局
+│   │   ├── common/         # 通用组件
+│   │   │   └── EvalChart.tsx   # 评估走势图
 │   │   ├── MoveList.tsx    # 着法列表
 │   │   ├── EnginePanel.tsx # 引擎面板
 │   │   ├── CommentBox.tsx  # 注释框
 │   │   └── GameInfo.tsx    # 对局信息
 │   ├── state/
-│   │   └── treeStore.ts    # Zustand 游戏树状态管理
+│   │   ├── treeStore.ts    # Zustand 游戏树状态管理
+│   │   └── uiStore.ts      # Jotai 全局 UI 状态
 │   ├── hooks/
 │   │   ├── useEngine.ts    # Tauri 引擎通信 Hook
 │   │   └── useSound.ts     # 声音播放 Hook

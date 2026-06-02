@@ -1,0 +1,42 @@
+/* Global styles for Chuhan */
+
+* {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:focus {
+  outline: none;
+}
+
+html, body {
+  overscroll-behavior: none;
+  overflow: auto;
+}
+
+.mantine-ScrollArea-viewport {
+  overscroll-behavior: none;
+}
+
+/* Mosaic overrides */
+.mosaic.mosaic-blueprint-theme {
+  background-color: transparent;
+  overflow: hidden;
+}
+
+.mosaic-split:hover .mosaic-split-line {
+  box-shadow: 0 0 0 1px var(--mantine-primary-color-filled) !important;
+}
+
+/* Board highlight overrides */
+[data-mantine-color-scheme="dark"] .square-2b8ce.highlight {
+  background-color: color-mix(in srgb, var(--mantine-primary-color-5) 40%, transparent);
+}
+
+[data-mantine-color-scheme="dark"] .square-2b8ce.legalmove {
+  background: radial-gradient(rgba(255, 255, 255, 0.3) 25%, rgba(0, 0, 0, 0) 0);
+}
+
+[data-mantine-color-scheme="dark"] .square-2b8ce.legalcapture {
+  background: radial-gradient(rgba(255, 0, 0, 0.4) 25%, rgba(0, 0, 0, 0) 0);
+}

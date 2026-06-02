@@ -1,0 +1,26 @@
+.tab {
+  padding-right: 9px;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+[data-mantine-color-scheme="light"] .tab {
+  background-color: transparent;
+  color: var(--mantine-color-gray-7);
+}
+
+[data-mantine-color-scheme="dark"] .tab {
+  background-color: transparent;
+  color: var(--mantine-color-gray-4);
+}
+
+.selected {
+  border-top: 2px solid var(--mantine-primary-color-filled);
+  border-bottom: 2px solid transparent;
+}
+
+[data-mantine-color-scheme="dark"] .selected {
+  background-color: var(--mantine-color-dark-7);
+}
