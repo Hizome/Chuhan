@@ -1,8 +1,8 @@
-# CCBridge Arena
+# 楚汉 (Chuhan)
 
-跨平台中国象棋 GUI，灵感来自 CCBridge 和 Arena。
+跨平台中国象棋 GUI，对 [ccbridge-arena](https://github.com/maksimKorzh/ccbridge-arena) 的重构版本。
 
-## 技术栈（v2.0 重构后）
+## 技术栈
 
 | 层级 | 技术 |
 |------|------|
@@ -13,12 +13,6 @@
 | **状态管理** | Zustand (游戏树) + Jotai (全局 UI) |
 | **棋盘渲染** | xiangqiboardjs |
 | **内置引擎** | Wukong (JavaScript) |
-
-重构参考了 [En Croissant](https://github.com/franciscoBSalgueiro/en-croissant) 的设计思路，包括：
-- 现代桌面应用架构（Tauri）
-- 游戏树数据结构（TreeNode + path-based navigation）
-- 状态管理分离（全局 UI vs 领域状态）
-- 组件化 UI 设计
 
 ## 功能
 
@@ -83,7 +77,8 @@ npm run tauri build
 │   │   └── engine.rs       # 引擎进程管理
 │   └── capabilities/       # 权限配置
 ├── public/libs/            # 第三方库（xiangqiboardjs, wukong）
-└── sample_games/           # 示例棋谱
+├── sample_games/           # 示例棋谱
+└── legacy/                 # 旧版 ccbridge-arena 代码
 ```
 
 ## 许可证

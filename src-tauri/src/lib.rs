@@ -21,7 +21,7 @@ pub fn run() {
       engine::kill_engine,
     ])
     .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .expect("error while running Chuhan application");
 }
 
 mod engine;

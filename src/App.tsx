@@ -107,7 +107,7 @@ function App() {
               hiddenFrom="sm"
               size="sm"
             />
-            <Title order={4}>CCBridge Arena</Title>
+            <Title order={4}>楚汉</Title>
           </Group>
           <Group gap="xs">
             <Button size="compact-sm" variant="light" onClick={resetTree}>
