@@ -9,6 +9,9 @@ release-builds
 src-tauri/target
 src-tauri/gen
 
+# Legacy old code
+legacy/
+
 # Logs
 npm-debug.log*
 
