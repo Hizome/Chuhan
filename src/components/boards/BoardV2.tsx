@@ -7,7 +7,7 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react";
-import type { Move } from "../../types/xiangqi";
+import type { DrawShape, Move } from "../../types/xiangqi";
 import { useSound } from "../../hooks/useSound";
 
 declare global {
@@ -59,6 +59,15 @@ const BOARD_GEOMETRY = {
   bottom: 704,
 };
 const PIECE_SIZE = 66;
+const DRAW_BRUSHES: Record<string, { color: string; opacity: number; width: number }> = {
+  green: { color: "#15781b", opacity: 0.82, width: 11 },
+  blue: { color: "#003088", opacity: 0.82, width: 11 },
+  red: { color: "#882020", opacity: 0.82, width: 11 },
+  yellow: { color: "#e68f00", opacity: 0.82, width: 11 },
+  paleBlue: { color: "#4a7bd3", opacity: 0.45, width: 8 },
+  paleGreen: { color: "#4f9f52", opacity: 0.45, width: 8 },
+  paleRed: { color: "#c45b5b", opacity: 0.45, width: 8 },
+};
 
 function fenToPosition(fen: string): Record<string, string> {
   const pos: Record<string, string> = {};
@@ -134,6 +143,33 @@ function pointToSquare(
   return `${FILES[file]}${rank}`;
 }
 
+function pointerToBoardPoint(clientX: number, clientY: number, rect: DOMRect) {
+  return {
+    x: ((clientX - rect.left) / rect.width) * BOARD_WIDTH,
+    y: ((clientY - rect.top) / rect.height) * BOARD_HEIGHT,
+  };
+}
+
+function arrowHeadPoints(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  size: number
+) {
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  const spread = Math.PI / 7;
+  return [
+    {
+      x: to.x - Math.cos(angle - spread) * size,
+      y: to.y - Math.sin(angle - spread) * size,
+    },
+    to,
+    {
+      x: to.x - Math.cos(angle + spread) * size,
+      y: to.y - Math.sin(angle + spread) * size,
+    },
+  ];
+}
+
 interface BoardV2Props {
   fen: string;
   onMove: (move: Move, newFen: string) => void;
@@ -143,6 +179,9 @@ interface BoardV2Props {
   pieceTheme?: string;
   boardTheme?: string;
   lastMove?: { from: string; to: string } | null;
+  shapes?: DrawShape[];
+  autoShapes?: DrawShape[];
+  onShapesChange?: (shapes: DrawShape[]) => void;
 }
 
 export default function BoardV2({
@@ -154,6 +193,9 @@ export default function BoardV2({
   pieceTheme = "/assets/pieces/{piece}.png",
   boardTheme = "/assets/boards/board-red.png",
   lastMove,
+  shapes = [],
+  autoShapes = [],
+  onShapesChange,
 }: BoardV2Props) {
   const engineRef = useRef<WukongEngine | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -171,6 +213,12 @@ export default function BoardV2({
     offsetY: number;
   } | null>(null);
   const [animatingSquare, setAnimatingSquare] = useState<string | null>(null);
+  const [drawing, setDrawing] = useState<{
+    orig: string;
+    x: number;
+    y: number;
+    brush: string;
+  } | null>(null);
 
   useEffect(() => {
     engineRef.current = new window.Engine();
@@ -251,6 +299,43 @@ export default function BoardV2({
     [onMove, play]
   );
 
+  const startDrawing = useCallback(
+    (e: PointerEvent<HTMLDivElement>, square: string) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        containerRef.current?.setPointerCapture(e.pointerId);
+      } catch {
+        // Some synthetic/browser automation paths do not expose pointer capture.
+      }
+      const point = pointerToBoardPoint(e.clientX, e.clientY, rect);
+      const brush = e.altKey ? "red" : e.shiftKey ? "blue" : "green";
+      setDrawing({ orig: square, x: point.x, y: point.y, brush });
+      clearSelection();
+    },
+    [clearSelection]
+  );
+
+  const finishDrawing = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!drawing) return false;
+
+      const rect = containerRef.current?.getBoundingClientRect();
+      const target = rect ? pointToSquare(clientX, clientY, rect, orientation) : null;
+      const shape: DrawShape = target && target !== drawing.orig
+        ? { orig: drawing.orig, dest: target, brush: drawing.brush }
+        : { orig: drawing.orig, brush: drawing.brush };
+
+      onShapesChange?.([shape]);
+      setDrawing(null);
+      return true;
+    },
+    [drawing, onShapesChange, orientation]
+  );
+
   const pieceSrc = useCallback(
     (fenChar: string) => {
       const code = PIECE_MAP[fenChar];
@@ -263,6 +348,11 @@ export default function BoardV2({
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>, square: string) => {
       if (!draggable) return;
+
+      if (e.button === 2 || e.ctrlKey) {
+        startDrawing(e, square);
+        return;
+      }
 
       if (selectedSquare && selectedSquare !== square && legalTargets.has(square)) {
         e.preventDefault();
@@ -316,6 +406,7 @@ export default function BoardV2({
       play,
       position,
       selectedSquare,
+      startDrawing,
     ]
   );
 
@@ -338,18 +429,27 @@ export default function BoardV2({
   );
 
   const handlePointerMove = useCallback((e: PointerEvent<HTMLDivElement>) => {
+    if (drawing) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const point = pointerToBoardPoint(e.clientX, e.clientY, rect);
+      setDrawing((prev) => (prev ? { ...prev, x: point.x, y: point.y } : null));
+      return;
+    }
     setDragging((prev) => (prev ? { ...prev, x: e.clientX, y: e.clientY } : null));
-  }, []);
+  }, [drawing]);
 
   const handlePointerUp = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
+      if (finishDrawing(e.clientX, e.clientY)) return;
       finishDrag(e.clientX, e.clientY);
     },
-    [finishDrag]
+    [finishDrag, finishDrawing]
   );
 
   const handlePointerCancel = useCallback(() => {
     setDragging(null);
+    setDrawing(null);
   }, []);
 
   useEffect(() => {
@@ -378,6 +478,35 @@ export default function BoardV2({
     };
   }, [dragging, finishDrag]);
 
+  useEffect(() => {
+    if (!drawing) return;
+
+    const handleWindowPointerMove = (event: globalThis.PointerEvent) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const point = pointerToBoardPoint(event.clientX, event.clientY, rect);
+      setDrawing((prev) => (prev ? { ...prev, x: point.x, y: point.y } : null));
+    };
+    const handleWindowPointerUp = (event: globalThis.PointerEvent) => {
+      finishDrawing(event.clientX, event.clientY);
+    };
+    const handleWindowPointerCancel = () => {
+      setDrawing(null);
+    };
+
+    window.addEventListener("pointermove", handleWindowPointerMove);
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerCancel);
+    window.addEventListener("blur", handleWindowPointerCancel);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerCancel);
+      window.removeEventListener("blur", handleWindowPointerCancel);
+    };
+  }, [drawing, finishDrawing]);
+
   const handleSquareClick = useCallback(
     (e: MouseEvent<HTMLDivElement>, square: string) => {
       if (!selectedSquare || selectedSquare === square || !legalTargets.has(square)) return;
@@ -399,6 +528,8 @@ export default function BoardV2({
     };
   };
 
+  const renderShapes = [...autoShapes, ...shapes];
+
   return (
     <div
       id={boardId}
@@ -417,7 +548,100 @@ export default function BoardV2({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onContextMenu={(event) => event.preventDefault()}
     >
+      <svg
+        viewBox={`0 0 ${BOARD_WIDTH} ${BOARD_HEIGHT}`}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+          zIndex: 3,
+        }}
+      >
+        {renderShapes.map((shape, index) => {
+          const from = squareToBoardPoint(shape.orig, orientation);
+          const brush = DRAW_BRUSHES[shape.brush] ?? DRAW_BRUSHES.green;
+          if (!from) return null;
+
+          if (!shape.dest) {
+            return (
+              <circle
+                key={`${shape.orig}-${shape.brush}-${index}`}
+                cx={from.x}
+                cy={from.y}
+                r={30}
+                fill="none"
+                stroke={brush.color}
+                strokeWidth={brush.width}
+                opacity={brush.opacity}
+              />
+            );
+          }
+
+          const to = squareToBoardPoint(shape.dest, orientation);
+          if (!to) return null;
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const length = Math.hypot(dx, dy);
+          const pad = 30;
+          const end = length > pad
+            ? { x: to.x - (dx / length) * pad, y: to.y - (dy / length) * pad }
+            : to;
+          const head = arrowHeadPoints(from, end, 34);
+          return (
+            <g key={`${shape.orig}-${shape.dest}-${shape.brush}-${index}`} opacity={brush.opacity}>
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={end.x}
+                y2={end.y}
+                stroke={brush.color}
+                strokeWidth={brush.width}
+                strokeLinecap="round"
+              />
+              <polyline
+                points={head.map((point) => `${point.x},${point.y}`).join(" ")}
+                fill="none"
+                stroke={brush.color}
+                strokeWidth={brush.width}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
+          );
+        })}
+        {drawing && (() => {
+          const from = squareToBoardPoint(drawing.orig, orientation);
+          if (!from) return null;
+          const brush = DRAW_BRUSHES[drawing.brush] ?? DRAW_BRUSHES.green;
+          const head = arrowHeadPoints(from, drawing, 30);
+          return (
+            <g opacity={0.55}>
+              <line
+                x1={from.x}
+                y1={from.y}
+                x2={drawing.x}
+                y2={drawing.y}
+                stroke={brush.color}
+                strokeWidth={brush.width}
+                strokeLinecap="round"
+              />
+              <polyline
+                points={head.map((point) => `${point.x},${point.y}`).join(" ")}
+                fill="none"
+                stroke={brush.color}
+                strokeWidth={brush.width}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
+          );
+        })()}
+      </svg>
+
       {squares.map((square) => {
         const piece = position[square];
         const isSelected = selectedSquare === square;

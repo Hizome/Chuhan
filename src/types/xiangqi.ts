@@ -38,6 +38,7 @@ export interface GameHeaders {
   event?: string;
   result?: string;
   round?: string;
+  orientation?: "red" | "black";
 }
 
 export type Annotation =
@@ -57,7 +58,7 @@ export type Annotation =
 export interface DrawShape {
   orig: string;
   dest?: string;
-  brush: string; // 如 "green", "red"
+  brush: string; // 如 "green", "red", "blue"
 }
 
 export interface EngineConfig {

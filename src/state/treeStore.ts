@@ -67,6 +67,8 @@ export interface TreeStore extends TreeState {
   // Annotations
   setComment: (comment: string) => void;
   toggleAnnotation: (annotation: string) => void;
+  setShapes: (shapes: TreeNode["shapes"]) => void;
+  clearShapes: () => void;
 
   // Headers
   setHeaders: (headers: Partial<GameHeaders>) => void;
@@ -182,6 +184,37 @@ export const createTreeStore = (id?: string, initialTree?: TreeState) => {
           } else {
             node.annotations.push(annotation as never);
           }
+          state.dirty = true;
+        })
+      ),
+
+    setShapes: (shapes: TreeNode["shapes"]) =>
+      set(
+        produce((state: TreeStore) => {
+          const node = getNodeAtPath(state.root, state.position);
+          const [shape] = shapes;
+          if (shape) {
+            const index = node.shapes.findIndex(
+              (item) => item.orig === shape.orig && item.dest === shape.dest
+            );
+            if (index >= 0) {
+              node.shapes.splice(index, 1);
+            } else {
+              node.shapes.push(shape);
+            }
+          } else {
+            node.shapes = [];
+          }
+          state.dirty = true;
+        })
+      ),
+
+    clearShapes: () =>
+      set(
+        produce((state: TreeStore) => {
+          const node = getNodeAtPath(state.root, state.position);
+          if (node.shapes.length === 0) return;
+          node.shapes = [];
           state.dirty = true;
         })
       ),

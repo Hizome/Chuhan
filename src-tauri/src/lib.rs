@@ -16,6 +16,7 @@ pub fn run() {
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![
+      engine::get_engine_config,
       engine::spawn_engine,
       engine::send_command,
       engine::kill_engine,

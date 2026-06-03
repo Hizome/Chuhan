@@ -9,6 +9,8 @@ export function useEngine(engineId: string) {
     knps: "-",
     score: "-",
     depth: "-",
+    bestmove: "-",
+    status: "idle",
   });
   const [isRunning, setIsRunning] = useState(false);
   const unlisteners = useRef<UnlistenFn[]>([]);
@@ -25,28 +27,50 @@ export function useEngine(engineId: string) {
       await invoke("spawn_engine", { engineId, path });
       setIsRunning(true);
       setOutput("");
-      setStats({ knps: "-", score: "-", depth: "-" });
+      setStats({ knps: "-", score: "-", depth: "-", bestmove: "-", status: "loading" });
 
       const stdoutUnlisten = await listen<string>(
         `engine:${engineId}/stdout`,
         (event) => {
           const line = event.payload;
-          setOutput((prev) => prev + line);
+          setOutput((prev) => prev + line + (line.endsWith("\n") ? "" : "\n"));
+
+          if (line.includes("uciok")) {
+            setStats((prev) => ({ ...prev, status: "uciok" }));
+          }
+
+          if (line.includes("readyok")) {
+            setStats((prev) => ({ ...prev, status: "ready" }));
+          }
+
+          const bestMoveMatch = line.match(/bestmove\s+(\S+)/);
+          if (bestMoveMatch) {
+            setStats((prev) => ({
+              ...prev,
+              bestmove: bestMoveMatch[1],
+              status: "bestmove",
+            }));
+          }
 
           // Parse info lines
           if (line.includes("info") && line.includes("score")) {
             const depthMatch = line.match(/depth (\d+)/);
             const scoreMatch = line.match(/score (?:cp|mate) (-?\d+)/);
             const nodesMatch = line.match(/nodes (\d+)/);
+            const npsMatch = line.match(/nps (\d+)/);
             const timeMatch = line.match(/time (\d+)/);
 
             const depth = depthMatch ? depthMatch[1] : "-";
             const score = scoreMatch ? scoreMatch[1] : "-";
             const nodes = nodesMatch ? parseInt(nodesMatch[1]) : 0;
             const time = timeMatch ? parseInt(timeMatch[1]) : 1;
-            const knps = time > 0 ? (nodes / time).toFixed(2) : "-";
+            const knps = npsMatch
+              ? Math.round(parseInt(npsMatch[1]) / 1000).toLocaleString()
+              : time > 0
+              ? (nodes / time).toFixed(2)
+              : "-";
 
-            setStats({ knps, score, depth });
+            setStats((prev) => ({ ...prev, knps, score, depth, status: "searching" }));
           }
         }
       );
@@ -54,7 +78,7 @@ export function useEngine(engineId: string) {
       const stderrUnlisten = await listen<string>(
         `engine:${engineId}/stderr`,
         (event) => {
-          setOutput((prev) => prev + event.payload);
+          setOutput((prev) => prev + event.payload + (event.payload.endsWith("\n") ? "" : "\n"));
         }
       );
 
@@ -69,6 +93,7 @@ export function useEngine(engineId: string) {
         `engine:${engineId}/terminated`,
         () => {
           setIsRunning(false);
+          setStats((prev) => ({ ...prev, status: "stopped" }));
         }
       );
 

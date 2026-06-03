@@ -7,6 +7,8 @@ import {
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
+  IconEraser,
+  IconSwitchVertical,
   IconTrash,
 } from "@tabler/icons-react";
 import BoardV2 from "./BoardV2";
@@ -17,6 +19,7 @@ import { createTreeStore } from "../../state/treeStore";
 import { useEngine } from "../../hooks/useEngine";
 import { useAtom } from "jotai";
 import { windowsStateAtom, tabPayloadsAtom } from "../../state/uiStore";
+import { enginesAtom, selectedEngineIdAtom } from "../../state/engineStore";
 import type { ViewId } from "../../state/uiStore";
 
 interface BoardAnalysisProps {
@@ -27,6 +30,8 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
   const store = useMemo(() => createTreeStore(tabId), [tabId]);
   const engine = useEngine(`engine-${tabId}`);
   const [windowsState, setWindowsState] = useAtom(windowsStateAtom);
+  const [engines] = useAtom(enginesAtom);
+  const [selectedEngineId] = useAtom(selectedEngineIdAtom);
   const isCompact = useMediaQuery("(max-width: 760px)");
 
   const {
@@ -41,6 +46,8 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
     goToPath,
     makeMove,
     deleteMove,
+    setShapes,
+    clearShapes,
     setHeaders,
     loadTree,
   } = store();
@@ -50,6 +57,13 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
   const lastMove = node.move
     ? { from: node.move.from, to: node.move.to }
     : null;
+  const orientation = headers.orientation ?? "red";
+  const engineBestMove = engine.stats.bestmove && engine.stats.bestmove !== "-"
+    ? engine.stats.bestmove
+    : null;
+  const engineHintShapes = engineBestMove && /^[a-i][0-9][a-i][0-9]/.test(engineBestMove)
+    ? [{ orig: engineBestMove.slice(0, 2), dest: engineBestMove.slice(2, 4), brush: "blue" }]
+    : [];
 
   const [payloads, setPayloads] = useAtom(tabPayloadsAtom);
 
@@ -101,6 +115,59 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
     [setWindowsState]
   );
 
+  const handleStartEngine = useCallback(
+    async (engineId: string) => {
+      const selectedEngine = engines.find((item) => item.id === engineId);
+      if (!selectedEngine) return;
+
+      if (!engine.isRunning) {
+        await engine.spawn(selectedEngine.path);
+        await engine.sendCommand(selectedEngine.protocol === "ucci" ? "ucci" : "uci");
+        for (const [name, value] of Object.entries(selectedEngine.settings)) {
+          if (value === null || value === "") continue;
+          await engine.sendCommand(`setoption name ${name} value ${value}`);
+        }
+        await engine.sendCommand("isready");
+        await engine.sendCommand("ucinewgame");
+      } else {
+        await engine.sendCommand("stop");
+      }
+
+      await engine.sendCommand(`position fen ${fen}`);
+      if (selectedEngine.go.type === "movetime") {
+        await engine.sendCommand(`go movetime ${selectedEngine.go.value}`);
+      } else {
+        await engine.sendCommand(`go depth ${selectedEngine.go.value}`);
+      }
+    },
+    [engine, engines, fen]
+  );
+
+  const handleStopEngine = useCallback(async () => {
+    if (engine.isRunning) {
+      await engine.sendCommand("stop");
+    }
+  }, [engine]);
+
+  const toggleOrientation = useCallback(() => {
+    setHeaders({ orientation: orientation === "red" ? "black" : "red" });
+  }, [orientation, setHeaders]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === "f" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        toggleOrientation();
+      }
+      if (event.key.toLowerCase() === "l" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        clearShapes();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [clearShapes, toggleOrientation]);
+
   const analysisPanel = (
     <AnalysisPanel
       root={root}
@@ -108,6 +175,10 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
       onNavigate={goToPath}
       engineOutput={engine.output}
       engineStats={engine.stats}
+      isEngineRunning={engine.isRunning}
+      selectedEngineId={selectedEngineId}
+      onStartEngine={handleStartEngine}
+      onStopEngine={handleStopEngine}
     />
   );
 
@@ -169,12 +240,39 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                position: "relative",
               }}
             >
+              <Stack gap={4} className="board-analysis-board-controls">
+                <Tooltip label="清除箭头" position="right">
+                  <ActionIcon
+                    variant="default"
+                    size="lg"
+                    aria-label="清除箭头"
+                    onClick={clearShapes}
+                  >
+                    <IconEraser size="1.2rem" />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="反转棋盘" position="right">
+                  <ActionIcon
+                    variant="default"
+                    size="lg"
+                    aria-label="反转棋盘"
+                    onClick={toggleOrientation}
+                  >
+                    <IconSwitchVertical size="1.2rem" />
+                  </ActionIcon>
+                </Tooltip>
+              </Stack>
               <BoardV2
                 fen={fen}
                 onMove={handleBoardMove}
                 lastMove={lastMove}
+                orientation={orientation}
+                shapes={node.shapes}
+                autoShapes={engineHintShapes}
+                onShapesChange={setShapes}
               />
             </div>
           );
@@ -193,17 +291,33 @@ export default function BoardAnalysis({ tabId }: BoardAnalysisProps) {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fen, lastMove, root, headers, position, engine, handleBoardMove]
+    [fen, lastMove, root, headers, position, node.shapes, engine, engineHintShapes, handleBoardMove, handleStartEngine, handleStopEngine, orientation, clearShapes, setShapes, toggleOrientation]
   );
 
   if (isCompact) {
     return (
       <div className="board-analysis-compact">
         <div className="board-analysis-compact-board">
+          <Group gap={4} className="board-analysis-compact-board-controls">
+            <Tooltip label="清除箭头">
+              <ActionIcon variant="default" aria-label="清除箭头" onClick={clearShapes}>
+                <IconEraser size="1.1rem" />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="反转棋盘">
+              <ActionIcon variant="default" aria-label="反转棋盘" onClick={toggleOrientation}>
+                <IconSwitchVertical size="1.1rem" />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
           <BoardV2
             fen={fen}
             onMove={handleBoardMove}
             lastMove={lastMove}
+            orientation={orientation}
+            shapes={node.shapes}
+            autoShapes={engineHintShapes}
+            onShapesChange={setShapes}
           />
         </div>
         <div className="board-analysis-compact-panels">

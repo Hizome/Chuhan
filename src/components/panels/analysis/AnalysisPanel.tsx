@@ -4,21 +4,36 @@ import {
   Tabs,
   ScrollArea,
   Accordion,
+  Button,
   Group,
   Text,
   Progress,
+  Select,
   Stack,
   Code,
+  Badge,
 } from "@mantine/core";
+import { useAtom } from "jotai";
 import type { TreeNode } from "../../../types/xiangqi";
 import EvalChart from "../../common/EvalChart";
+import { enginesAtom, selectedEngineIdAtom } from "../../../state/engineStore";
 
 interface AnalysisPanelProps {
   root: TreeNode;
   position: number[];
   onNavigate: (path: number[]) => void;
   engineOutput: string;
-  engineStats: { knps: string; score: string; depth: string };
+  engineStats: {
+    knps: string;
+    score: string;
+    depth: string;
+    bestmove?: string;
+    status?: string;
+  };
+  isEngineRunning: boolean;
+  selectedEngineId: string | null;
+  onStartEngine: (engineId: string) => Promise<void>;
+  onStopEngine: () => Promise<void>;
 }
 
 export default function AnalysisPanel({
@@ -27,11 +42,31 @@ export default function AnalysisPanel({
   onNavigate,
   engineOutput,
   engineStats,
+  isEngineRunning,
+  selectedEngineId,
+  onStartEngine,
+  onStopEngine,
 }: AnalysisPanelProps) {
   const [activeTab, setActiveTab] = useState<string>("engines");
+  const [engines] = useAtom(enginesAtom);
+  const [, setSelectedEngineId] = useAtom(selectedEngineIdAtom);
+  const [busy, setBusy] = useState(false);
 
   // Parse engine output for PV lines
   const pvLines = parsePvLines(engineOutput);
+  const enabledEngines = engines.filter((engine) => engine.enabled);
+  const activeEngineId = selectedEngineId ?? enabledEngines[0]?.id ?? null;
+  const activeEngine = engines.find((engine) => engine.id === activeEngineId) ?? null;
+
+  const handleStart = async () => {
+    if (!activeEngineId) return;
+    setBusy(true);
+    try {
+      await onStartEngine(activeEngineId);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Paper withBorder h="100%" pos="relative">
@@ -51,9 +86,48 @@ export default function AnalysisPanel({
         <Tabs.Panel value="engines" p="xs" h="100%">
           <ScrollArea h="100%">
             <Stack gap="xs">
+              <Group align="end" gap="xs">
+                <Select
+                  label="分析引擎"
+                  placeholder="请先在引擎页添加 Pikafish"
+                  value={activeEngineId}
+                  data={engines.map((engine) => ({
+                    value: engine.id,
+                    label: `${engine.name}${engine.enabled ? "" : "（停用）"}`,
+                  }))}
+                  onChange={setSelectedEngineId}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  variant="light"
+                  loading={busy}
+                  disabled={!activeEngine}
+                  onClick={handleStart}
+                >
+                  开始分析
+                </Button>
+                <Button
+                  variant="default"
+                  disabled={!isEngineRunning}
+                  onClick={() => void onStopEngine()}
+                >
+                  停止
+                </Button>
+              </Group>
+
               {/* Engine summary */}
               <Group justify="space-between">
-                <Text fw="bold">引擎 1</Text>
+                <Group gap="xs">
+                  <Text fw="bold">{activeEngine?.name ?? "未配置引擎"}</Text>
+                  {activeEngine && (
+                    <Badge variant="light">
+                      {activeEngine.go.type === "depth"
+                        ? `${activeEngine.go.value} 层`
+                        : `${activeEngine.go.value} ms`}
+                    </Badge>
+                  )}
+                  {engineStats.status && <Badge variant="outline">{engineStats.status}</Badge>}
+                </Group>
                 <Group gap="lg">
                   <Stack gap={0} align="center">
                     <Text size="0.7rem" tt="uppercase" fw={700}>
@@ -82,6 +156,11 @@ export default function AnalysisPanel({
                 </Group>
               </Group>
               <Progress value={50} animated color="blue" />
+              {engineStats.bestmove && engineStats.bestmove !== "-" && (
+                <Text size="sm" c="dimmed">
+                  Bestmove: <Code>{engineStats.bestmove}</Code>
+                </Text>
+              )}
 
               {/* PV Lines */}
               <Accordion variant="separated" multiple defaultValue={["pv1"]}>

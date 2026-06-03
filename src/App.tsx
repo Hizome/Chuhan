@@ -16,6 +16,7 @@ import "./styles/global.css";
 import TopBar from "./components/layout/TopBar";
 import SideBar from "./components/layout/SideBar";
 import BoardsPage from "./components/tabs/BoardsPage";
+import EnginesPage from "./components/engines/EnginesPage";
 
 const theme = createTheme({
   primaryColor: "blue",
@@ -73,7 +74,7 @@ function App() {
         <AppShell.Main style={{ overflow: "hidden" }}>
           {activePage === "boards" && <BoardsPage />}
           {activePage === "databases" && <div>数据库（待实现）</div>}
-          {activePage === "engines" && <div>引擎管理（待实现）</div>}
+          {activePage === "engines" && <EnginesPage />}
           {activePage === "settings" && <div>设置（待实现）</div>}
         </AppShell.Main>
       </AppShell>
